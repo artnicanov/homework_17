@@ -28,6 +28,7 @@ movies_schema = MovieSchema(many=True)
 @movie_ns.route('/')
 class MoviesView(Resource):
     def get(self):
+        """ получаем инфо о всех фильмах """
         movies_query = db.session.query(Movie)
 
         ### Условие для 3 Шага ###
@@ -42,14 +43,35 @@ class MoviesView(Resource):
 
         return movies_schema.dump(movies_query.all())
 
+    def post(self):
+        """ добавляем инфо о новом фильме """
+        new_movie = Movie(**request.json)
+        with db.session.begin():
+            db.session.add(new_movie)
+        return "New movie added"
+
 # Шаг 2 для вывода по id фильма
 @movie_ns.route('/<int:id>')
 class MovieView(Resource):
     def get(self, id):
+        """ получаем инфо о фильме по id """
         movie_query = db.session.query(Movie).get(id)
         if not movie_query:
-            return "Такого фильма нет"
+            return "No such movie"
         return movie_schema.dump(movie_query)
+
+    def put(self, id):
+        """ обновляем инфо о фильме по id"""
+        db.session.query(Movie).filter(Movie.id == id).update(request.json)
+        db.session.commit()
+        return "Movie info was updated"
+
+    def delete(self, id):
+        """ удаляем инфо о фильме по id"""
+        del_movie = db.session.query(Movie).get(id)
+        db.session.delete(del_movie)
+        db.session.commit()
+        return "Movie was deleted"
 
 if __name__ == '__main__':
     app.run(debug=True)
